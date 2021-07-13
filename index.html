@@ -143,7 +143,8 @@
           <div class="modal-header">
             <div class="modal-title" id="enlargeTitle">
             </div>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div id="enlargeTitleClose">
+            </div>
           </div>
           <div class="modal-body d-flex justify-content-center align-items-center" id="enlargeBody">
           </div>
@@ -199,7 +200,7 @@
           $("#msgBody").html(cuerpo+(log==null?"":("<textarea style='width:100%' rows='5'>"+log+"</textarea>")));
           msgModal.show();
       }
-      function showSEL(titulo, opciones, callback, multi = false){
+      function showSEL(titulo, opciones, callback, multi = false, del = null){
         if(opciones == null || opciones.length == null || opciones.length < 1){
           showMSG("Error al seleccionar", "No hay nada que seleccionar", opciones)
           return;
@@ -217,7 +218,11 @@
         }
         let html = '<div class="list-group">';
         opciones.forEach(opcion => {
-          html += `<a href="#" class="list-group-item" onclick='selSelect(this, ${JSON.stringify(opcion)});return false;'><img src='${opcion.thumb}' style="width:60px;height:60px;object-fit:cover;margin-right:1rem;" />${opcion.name}</a>`;
+          html += `<a href="#" class="list-group-item d-flex flex-row justify-content-between align-items-center" onclick='selSelect(this, ${JSON.stringify(opcion)});return false;'>
+                <img src='${opcion.thumb}' style="width:60px;height:60px;object-fit:cover;margin-right:1rem;" />
+                <span>${opcion.name}</span>
+                ${del==null?"":`<button type="button" class="btn btn-outline-danger" onclick="remove${del}(${opcion.id})"><i class="fas fa-times"></i></button>`}
+            </a>`;
         })
         html += '</div>';
         $("#selBody").html(html);
@@ -240,16 +245,25 @@
       function enlargePic(index){
         $("#enlargeBody").html(`<img src="${picList[index].url}" style="width:100%;height:100%;object-fit:contain;">`);
         $("#enlargeTitle").html(`
-          <button type="button" class="btn btn-outline-primary btn-sm" onclick="enlargePic(${index==0?(picList.length-1):(index-1)})"><i class="fas fa-chevron-left"></i></button>
-          <button type="button" class="btn btn-outline-primary btn-sm" onclick="enlargePic(${index==(picList.length-1)?0:(index+1)})"><i class="fas fa-chevron-right"></i></button>
+          <button type="button" class="btn btn-outline-primary btn-sm ps-2" onclick="enlargePic(${index==0?(picList.length-1):(index-1)})"><i class="fas fa-chevron-left"></i></button>
+          <button type="button" class="btn btn-outline-primary btn-sm ms-1 pe-2" onclick="enlargePic(${index==(picList.length-1)?0:(index+1)})"><i class="fas fa-chevron-right"></i></button>
+        `);
+        $("#enlargeTitleClose").html(`
+            <button type="button" class="btn btn-outline-danger btn-sm me-3" onclick="deletePic(${picList[index].id})"><i class="fas fa-trash"></i></button>
+            <button type="button" class="btn-close ms-3" data-bs-dismiss="modal" aria-label="Close"></button>
         `);
         enlargeModal.show();
       }
 
       function selectPic(){
-          $('#btnSelect').trigger('click');
+          if(artist == null || characters.length == 0){
+              showMSG("No se puede subir foto", "Debe seleccionar un artista y al menos un personaje.");
+          }else{
+              $('#btnSelect').trigger('click');
+          }
       }
       function uploadPic(){
+
         var fdata = new FormData();
 
         var n = document.getElementById('btnSelect').files.length;
@@ -261,6 +275,11 @@
         fdata.append( 'characters', JSON.stringify(characters));
         fdata.append( 'action', "createPic");
         ajax(fdata, (s) => {console.log(s);fetchItems()}, (error) => showMSG("Error en la operacion", "Error al subir imagen", error), true);
+      }
+      function deletePic(id){
+          ajax({action: "deletePic", id}, (s) => {console.log(s)}, (error) => showMSG("Error en la operacion", "Error al eliminar imagen", error));
+          enlargeModal.hide();
+          fetchItems();
       }
       function crearArtista(){
         var fdata = new FormData();
@@ -284,6 +303,14 @@
       function showCrearPersonaje(){
         createPersonajeModal.show();
       }
+      function removeArtista(id){
+          ajax({action: "deleteArtist", id}, (s) => {console.log(s)}, (error) => showMSG("Error en la operacion", "Error al eliminar artista", error));
+          selModal.hide();
+      }
+      function removePersonaje(id){
+          ajax({action: "deleteCharacter", id}, (s) => {console.log(s)}, (error) => showMSG("Error en la operacion", "Error al eliminar personaje", error));
+          selModal.hide();
+      }
 
       function selectArtista(){
         ajax({action: "getArtists"}, (res) => {
@@ -296,7 +323,7 @@
               $("#artistaShow").html(drawMiniatures([sel]));
             }
             fetchItems();
-          });
+        }, false, "Artista");
         }, (error) => {
           showMsg("Error de comunicación", error);
         });
@@ -315,7 +342,7 @@
               $("#personajeShow").html(drawMiniatures(sel));
             }
             fetchItems();
-          }, true);
+        }, true, "Personaje");
         }, (error) => {
           showMsg("Error de comunicación", error);
         });
@@ -326,7 +353,7 @@
           html += `
             <div class="d-flex flex-row justify-content-stretch align-items-center m-1">
               <img src="${item.thumb}" style="width:40px;height:40px;object-fit:cover;margin-right:1rem;"/>
-              ${item.name}
+              <span>${item.name}</span>
             </div>
           `;
         });

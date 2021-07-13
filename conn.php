@@ -1,6 +1,18 @@
 <?php
   include "constants.php";
 
+  //Verificar estructura de ficheros
+    if(!file_exists("DATA"))
+        mkdir("DATA");
+    if(!file_exists("DATA/PIC"))
+        mkdir("DATA/PIC");
+    if(!file_exists("DATA/ARTIST"))
+        mkdir("DATA/ARTIST");
+    if(!file_exists("DATA/CHARACTER"))
+        mkdir("DATA/CHARACTER");
+    if(!file_exists("DATA/THUMB"))
+        mkdir("DATA/THUMB");
+
   function conn(){
     return new Mysqli(MYSQL_HOST, MYSQL_USER, MYSQL_PASS, MYSQL_DB);
   }
@@ -56,6 +68,7 @@
     $stmt->execute();
     $stmt -> close();
     $link->close();
+    unlink("DATA/ARTIST/".$id.".jpg");
   }
   function createCharacter($name, $img, $type){
     $link = conn();
@@ -75,6 +88,7 @@
     $stmt->execute();
     $stmt -> close();
     $link->close();
+    unlink("DATA/CHARACTER/".$id.".jpg");
   }
   function createPic($artist, $characters, $files){
     $link = conn();
@@ -103,10 +117,13 @@
   }
   function deletePic($id){
     $link = conn();
+    $stmt = $link->prepare("DELETE FROM `imagen` WHERE `id`=?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $stmt -> close();
     $link->close();
+    unlink("DATA/THUMB/".$id.".jpg");
+    unlink("DATA/PIC/".$id.".jpg");
   }
 
   function getPics($artist, $characters){
